@@ -99,21 +99,23 @@ int MakeEntry(SudokuWorkspace workspace, int Row, int Column, int Number, bool b
 }
 
 int EliminateCandidate(SudokuWorkspace workspace, int Row, int Column, int Number, CellList oocList) {
-    int bmRowEntered, bmRowCands;
-    int bmColEntered, bmColCands;
-    int bmSquEntered, bmSquCands;
+    int bmRowEntered, bmRowCands, bmRowSet;
+    int bmColEntered, bmColCands, bmColSet;
+    int bmSquEntered, bmSquCands, bmSquSet;
     int bmInverse = ~BITMASKS[Number];
     int iRowIdx = S_TEN * Row;
     int iColIdx = Column;
     int iSquIdx = (SQUARE_IDX[iRowIdx + iColIdx] - 1) * S_NINE;
-    int iToken  = 0;
+    int iToken  = 1;
+    int iStatus = S_OK;
 
-    while (iToken < S_NINE) {
+    while (iToken <= S_NINE) {
         iRowIdx += 1;
         iColIdx += S_TEN;
 
         if (IS_Entered(workspace[iRowIdx])) {
             bmRowEntered &= BITMASKS[-workspace[iRowIdx]];
+            bmRowSet |= BITMASKS[iToken];
         } else {
             workspace[iRowIdx] &= bmInverse;
             bmRowCands |= workspace[iRowIdx];
@@ -121,6 +123,7 @@ int EliminateCandidate(SudokuWorkspace workspace, int Row, int Column, int Numbe
 
         if (IS_Entered(workspace[iColIdx])) {
             bmColEntered &= BITMASKS[-workspace[iColIdx]];
+            bmColSet |= BITMASKS[iToken];
         } else {
             workspace[iColIdx] &= bmInverse;
             bmColCands |= workspace[iColIdx];
@@ -129,6 +132,7 @@ int EliminateCandidate(SudokuWorkspace workspace, int Row, int Column, int Numbe
         int nSquareIdx = S_TEN * SQUARE_COORDS_ROW[iSquIdx] + SQUARE_COORDS_COL[iSquIdx];
         if (IS_Entered(workspace[nSquareIdx])) {
             bmSquEntered &= BITMASKS[-workspace[nSquareIdx]];
+            bmSquSet |= BITMASKS[iToken];
         } else {
             workspace[nSquareIdx] &= bmInverse;
             bmSquCands |= workspace[nSquareIdx];
@@ -139,7 +143,24 @@ int EliminateCandidate(SudokuWorkspace workspace, int Row, int Column, int Numbe
     }
 
     // check  ccontradictions found <-> cands
+    if ((bmRowEntered ^ bmRowCands) != S_ALL_BITS_SET) { return S_CONTRADICTION; }
+    if ((bmColEntered ^ bmColCands) != S_ALL_BITS_SET) { return S_CONTRADICTION; }
+    if ((bmSquEntered ^ bmSquCands) != S_ALL_BITS_SET) { return S_CONTRADICTION; }
+
     // check only one cell empty
+    if (BITCOUNT[bmRowSet] == 8) {
+        iStatus = MakeEntry(workspace, Row, REVERSE_BITMASKS[S_ALL_BITS_SET ^ bmRowSet], REVERSE_BITMASKS[S_ALL_BITS_SET ^ bmRowEntered]);
+        if (iStatus != S_OK) { return iStatus; }
+    }
+    if (BITCOUNT[bmColSet] == 8) {
+        iStatus = MakeEntry(workspace, REVERSE_BITMASKS[S_ALL_BITS_SET ^ bmColSet], Column, REVERSE_BITMASKS[S_ALL_BITS_SET ^ bmColEntered]);
+        if (iStatus != S_OK) { return iStatus; }
+    }
+    if (BITCOUNT[bmSquSet] == 8) {
+        int // NOT DONE!!!!!!!!!!
+        iStatus = MakeEntry(workspace, Row, REVERSE_BITMASKS[S_ALL_BITS_SET ^ bmRowSet], REVERSE_BITMASKS[S_ALL_BITS_SET ^ bmRowEntered]);
+        if (iStatus != S_OK) { return iStatus; }
+    }
     // check done
 
 }
