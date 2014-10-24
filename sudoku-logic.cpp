@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "sudoku-logic.h"
 #include "sudoku-solver.h"
+#include "bitcount.h"
 
 #include <string>
 
@@ -513,6 +514,7 @@ int DeterministicSolving(SudokuWorkspace workspace, CellList candlist /*= NULL*/
 }
 
 int CountCandidatesInCell(int nCellStatus, bool bBreakAfterTwo /*= true*/) {
+    return BITCOUNT[nCellStatus];
 	int iCandLoop = S_NINE;
 	int nCands = 0;
 	while ((nCellStatus > 0) && (iCandLoop > 0)){

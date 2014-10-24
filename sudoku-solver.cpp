@@ -13,7 +13,7 @@ void SolveSudoku(SudokuPuzzle sudoku, FILE* outFile) {
 	InitWorkspace(workspace);
 	candlist[0] = 0;
 	iStatus = TransferSudokuToWorkspace(sudoku, workspace);
-    /*
+
 	if ((iStatus != S_CONTRADICTION) && (iStatus != S_EMPTY)) {
 		iStatus = DeterministicSolving(workspace, candlist);
 	}
@@ -28,7 +28,6 @@ void SolveSudoku(SudokuPuzzle sudoku, FILE* outFile) {
 	double dInvFreq = 1000.0 / static_cast<double>( Freq.QuadPart );
 	QueryPerformanceCounter( &TS );
 #endif
-    */
 	while (iStatus == S_OK) {
 		iStatus = SolveByBacktracking(workspace, candlist);
 		
@@ -36,8 +35,7 @@ void SolveSudoku(SudokuPuzzle sudoku, FILE* outFile) {
 			candlist[0] = 0;
 			iStatus = DeterministicSolving(workspace, candlist);
 		}
-	}/*
-    */
+    }
 #ifdef TIMING
 	QueryPerformanceCounter( &TE );
 	printf("BACKTRACK elapsed: %f ms\n", ((static_cast<double>( TE.QuadPart - TS.QuadPart )) * dInvFreq));
