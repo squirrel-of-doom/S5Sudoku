@@ -17,7 +17,6 @@ extern const int BITMASKS[] = {  511,	// 111111111 = 0 (for initialization and i
 								 256	// 100000000 = 9
 						        };
 
-
 extern const int REVERSE_BITMASKS[] = {  0,
 	1,
 	2,
@@ -78,26 +77,74 @@ int MakeEntry(SudokuWorkspace workspace, int Row, int Column, int Number, bool b
 	}
 
 	iStatus = S_OK;
-	oocList[0] = 0;
-	if (S_OK != (iStatus = EliminateCandidate(workspace, Row, Column, Number, oocList))) { return iStatus; }
+	//oocList[0] = 0;
 	// Set entry
 	workspace[nCellIdx] = -Number;
 	// Eliminate field as fixed in 0-index
 	workspace[nRowIdx] &= ~BITMASKS[Column];
 	workspace[Column] &= ~BITMASKS[Row];
 
+    if (S_OK != (iStatus = EliminateCandidate(workspace, Row, Column, Number, oocList))) { return iStatus; }
+
+    /*
 	if (oocList[0] != 0) {
 		//iStatus = OnlyOneCandidateInGroup(workspace, oocList);
 		if (iStatus != S_OK) { return iStatus; }
 	}
-
+    
 	if (bCleanUp) {
 		iStatus = DeterministicSolving(workspace);
-	}
+	}*/
 	return iStatus;
 }
 
 int EliminateCandidate(SudokuWorkspace workspace, int Row, int Column, int Number, CellList oocList) {
+    int bmRowEntered, bmRowCands;
+    int bmColEntered, bmColCands;
+    int bmSquEntered, bmSquCands;
+    int bmInverse = ~BITMASKS[Number];
+    int iRowIdx = S_TEN * Row;
+    int iColIdx = Column;
+    int iSquIdx = (SQUARE_IDX[iRowIdx + iColIdx] - 1) * S_NINE;
+    int iToken  = 0;
+
+    while (iToken < S_NINE) {
+        iRowIdx += 1;
+        iColIdx += S_TEN;
+
+        if (IS_Entered(workspace[iRowIdx])) {
+            bmRowEntered &= BITMASKS[-workspace[iRowIdx]];
+        } else {
+            workspace[iRowIdx] &= bmInverse;
+            bmRowCands |= workspace[iRowIdx];
+        }
+
+        if (IS_Entered(workspace[iColIdx])) {
+            bmColEntered &= BITMASKS[-workspace[iColIdx]];
+        } else {
+            workspace[iColIdx] &= bmInverse;
+            bmColCands |= workspace[iColIdx];
+        }
+
+        int nSquareIdx = S_TEN * SQUARE_COORDS_ROW[iSquIdx] + SQUARE_COORDS_COL[iSquIdx];
+        if (IS_Entered(workspace[nSquareIdx])) {
+            bmSquEntered &= BITMASKS[-workspace[nSquareIdx]];
+        } else {
+            workspace[nSquareIdx] &= bmInverse;
+            bmSquCands |= workspace[nSquareIdx];
+        }
+
+        iSquIdx += 1;
+        iToken += 1;
+    }
+
+    // check  ccontradictions found <-> cands
+    // check only one cell empty
+    // check done
+
+}
+
+int EliminateCandidate2(SudokuWorkspace workspace, int Row, int Column, int Number, CellList oocList) {
 	int sqRow, sqCol;
 	int iSquare;
 	int iRemovedCandidates;
@@ -220,6 +267,7 @@ int EliminateCandidate(SudokuWorkspace workspace, int Row, int Column, int Numbe
 	return S_OK;
 }
 
+/*
 int OnlyOneCandidateInGroup(SudokuWorkspace workspace, CellList oocList) {
 	if (!oocList) { return S_ERROR; }
 
@@ -353,8 +401,10 @@ int MultipleSingleCandidatesInGroup(SudokuWorkspace workspace, int nOocInfo) {
 	}
 	return iStatus;
 }
-
+*/
 /* Deterministic solving */
+
+
 
 int DeterministicSolving(SudokuWorkspace workspace, CellList candlist /*= NULL*/) {
 	int iStatus = S_OK;
@@ -374,6 +424,8 @@ int DeterministicSolving(SudokuWorkspace workspace, CellList candlist /*= NULL*/
 	int  nSquareOnce, nSquareTwice;
 
 	int squareEntered[9];
+
+    return S_OK;
 
 #ifdef TIMING
 	LARGE_INTEGER TS, TE, Freq;
@@ -530,6 +582,8 @@ int CountCandidatesInCell(int nCellStatus, bool bBreakAfterTwo /*= true*/) {
 	return nCands;
 }
 
+/*
+
 int CompletesRow(SudokuWorkspace workspace, int iToComplete, int iFreeCell) {
 	int nPossible = S_ALL_BITS_SET;
 	for (int cell = 1; cell <= S_NINE; cell++) {
@@ -551,6 +605,10 @@ int CompletesColumn(SudokuWorkspace workspace, int iToComplete, int iFreeCell) {
 	if (0 != (nPossible & (nPossible - 1))) { return S_CONTRADICTION; }
 	return REVERSE_BITMASKS[nPossible];
 }
+
+*/
+
+
 
 int BacktrackInCell(SudokuWorkspace workspace, int Row, int Column) {
 	int iStatus = S_OK;
