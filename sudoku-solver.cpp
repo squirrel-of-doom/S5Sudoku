@@ -8,15 +8,10 @@
 void SolveSudoku(SudokuPuzzle sudoku, FILE* outFile) {
 	int iStatus;
 	int workspace[S_100];
-	CellList candlist = new int[S_81];
 
 	InitWorkspace(workspace);
-	candlist[0] = 0;
 	iStatus = TransferSudokuToWorkspace(sudoku, workspace);
 
-	if ((iStatus != S_CONTRADICTION) && (iStatus != S_EMPTY)) {
-		iStatus = DeterministicSolving(workspace, candlist);
-	}
 	if ((iStatus == S_CONTRADICTION) || (iStatus == S_DONE) || (iStatus == S_EMPTY)) {
 		WriteOutSolutionFromWorkspace(outFile, workspace, iStatus);
 		return;
@@ -29,44 +24,29 @@ void SolveSudoku(SudokuPuzzle sudoku, FILE* outFile) {
 	QueryPerformanceCounter( &TS );
 #endif
 	while (iStatus == S_OK) {
-		iStatus = SolveByBacktracking(workspace, candlist);
-		
-		if (iStatus == S_OK) {
-			candlist[0] = 0;
-			iStatus = DeterministicSolving(workspace, candlist);
-		}
-    }
+		iStatus = SolveByBacktracking(workspace);
+	}
 #ifdef TIMING
 	QueryPerformanceCounter( &TE );
 	printf("BACKTRACK elapsed: %f ms\n", ((static_cast<double>( TE.QuadPart - TS.QuadPart )) * dInvFreq));
 #endif
 
 	WriteOutSolutionFromWorkspace(outFile, workspace, iStatus);
+	return;
 }
 
 /* Backtracking */
-int SolveByBacktracking(SudokuWorkspace workspace, CellList candlist /*= NULL*/) {
+int SolveByBacktracking(SudokuWorkspace workspace) {
 	int iStatus = S_OK;
-	int iCand = 0;
-	int iCell = S_CAND_TAKEN;
+	int iRow, iColumn;
 
-	if (candlist != NULL) {
-		while (candlist[iCand] != 0) {
-			if (candlist[iCand] == S_CAND_TAKEN) { iCand += 1; continue; }
-			iCell = candlist[iCand];
-			candlist[iCand] = S_CAND_TAKEN;
-			if (! IS_Entered(workspace[iCell])) {
-				iStatus = BacktrackInCell(workspace, iCell / 10, iCell % 10);
-				if (iStatus != S_OK) { return iStatus; }
-			}
-			iCand += 1;
-		}
-		if (iCell != S_CAND_TAKEN) { 
-			return iStatus; 
-		}
+	while (iStatus == S_OK) {
+		iStatus = FixAndGetNextIndex(workspace, iRow, iColumn);
+		if (iStatus != S_OK) { break; }
+		iStatus = BacktrackInCell(workspace, iRow, iColumn);
 	}
 
-    return iStatus;
+	return iStatus;
 }
 
 int TransferSudokuToWorkspace(SudokuPuzzle sudoku, SudokuWorkspace workspace) {
@@ -98,7 +78,7 @@ int TransferSudokuToWorkspace(SudokuPuzzle sudoku, SudokuWorkspace workspace) {
 }
 
 const char* sImpossible = "0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n\n";
-const char* sSolvesEmpty = "-1,-2,-3,-4,-5,-6,-7,-8,-9\n-4,-5,-6,-7,-8,-9,-1,-2,-3\n-7,-8,-9,-1,-2,-3,-4,-5,-6\n-2,-3,-1,-5,-6,-4,-8,-9,-7\n-5,-6,-4,-8,-9,-7,-2,-1,-3\n-8,-9,-7,-2,-3,-1,-5,-6,-4\n-3,-1,-2,-6,-4,-5,-9,-7,-8\n-6,-4,-5,-9,-7,-8,-3,-1,-2\n-9,-8,-7,-3,-1,-2,-6,-4,-5\n\n";
+const char* sSolvesEmpty = "-1,-2,-3,-4,-5,-6,-7,-8,-9\n-4,-5,-6,-7,-8,-9,-1,-2,-3\n-7,-8,-9,-1,-2,-3,-4,-5,-6\n-2,-3,-1,-5,-6,-4,-8,-9,-7\n-5,-6,-4,-8,-9,-7,-2,-3,-1\n-8,-9,-7,-2,-3,-1,-5,-6,-4\n-3,-1,-2,-6,-4,-5,-9,-7,-8\n-6,-4,-5,-9,-7,-8,-3,-1,-2\n-9,-7,-8,-3,-1,-2,-6,-4,-5\n\n";
 
 void WriteOutSolutionFromWorkspace(FILE* outFile, SudokuWorkspace workspace, int nStatus) {
 	bool bMulti = (nStatus == S_MULTIPLE);
@@ -113,7 +93,7 @@ void WriteOutSolutionFromWorkspace(FILE* outFile, SudokuWorkspace workspace, int
 		fputs(sSolvesEmpty, outFile);
 		return;
 	}
-
+	
 	for (int row = 1; row <= S_NINE; row++) {
 		nRowIdx += S_TEN;
 		for (int col = 1; col <= S_NINE; col++) {

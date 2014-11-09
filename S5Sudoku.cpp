@@ -36,10 +36,22 @@ int RunProgram(char* sInFile = NULL) {
         fopen_s(&outFile, "OUT.TXT", "w");
         setvbuf(outFile, outBuffer, _IOFBF, 65536);
 
+#ifdef TIMING
+		LARGE_INTEGER TS, TE, Freq;
+		QueryPerformanceFrequency( &Freq );
+		double dInvFreq = 1000.0 / static_cast<double>( Freq.QuadPart );
+#endif
         sudokuIter = sudokuList;
         while (sudokuIter != NULL) {
-            //printf("%d\n", num++);
+            //printf("%d ", num++);
+#ifdef TIMING
+			QueryPerformanceCounter( &TS );
+#endif
             SolveSudoku(sudokuIter, outFile);
+#ifdef TIMING
+			QueryPerformanceCounter( &TE );
+			printf("%d\t%f\n", num++, ((static_cast<double>( TE.QuadPart - TS.QuadPart )) * dInvFreq));
+#endif
             sudokuIter = GetNextSudoku(sudokuList, sudokuIter);
         }
 
