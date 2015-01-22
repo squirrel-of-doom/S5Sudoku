@@ -39,6 +39,28 @@ const int SQUARE_COORDS_COL[] =
 	 1, 2, 3, 1, 2, 3, 1, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6, 7, 8, 9, 7, 8, 9, 7, 8, 9,
 	 1, 2, 3, 1, 2, 3, 1, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6, 7, 8, 9, 7, 8, 9, 7, 8, 9};
 
+const int ROW_IDX[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+					   0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+					   0, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+					   0, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+					   0, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+					   0, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+					   0, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+					   0, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+					   0, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+                       0, 9, 9, 9, 9, 9, 9, 9, 9, 9};
+
+const int COL_IDX[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			 		   0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+					   0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+					   0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+					   0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+					   0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+					   0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+					   0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+					   0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                       0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
 const int SQUARE_IDX[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 						  0, 1, 1, 1, 2, 2, 2, 3, 3, 3,
 						  0, 1, 1, 1, 2, 2, 2, 3, 3, 3,
@@ -50,7 +72,18 @@ const int SQUARE_IDX[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 						  0, 7, 7, 7, 8, 8, 8, 9, 9, 9,
 						  0, 7, 7, 7, 8, 8, 8, 9, 9, 9};
 
-const int S_BLOCK_SIZE = S_100 * sizeof(int);
+const int WS_IDX[] = {11, 12, 13, 14, 15, 16, 17, 18, 19,
+					  21, 22, 23, 24, 25, 26, 27, 28, 29,
+					  31, 32, 33, 34, 35, 36, 37, 38, 39,
+					  41, 42, 43, 44, 45, 46, 47, 48, 49,
+					  51, 52, 53, 54, 55, 56, 57, 58, 59,
+					  61, 62, 63, 64, 65, 66, 67, 68, 69,
+					  71, 72, 73, 74, 75, 76, 77, 78, 79,
+					  81, 82, 83, 84, 85, 86, 87, 88, 89,
+                      91, 92, 93, 94, 95, 96, 97, 98, 99};
+
+const int S_BLOCK_SIZE_100 = S_100 * sizeof(int);
+const int S_BLOCK_SIZE_TEN = S_TEN * sizeof(int);
 
 //#include <Windows.h>
 //#define TIMING 1
@@ -165,7 +198,7 @@ int EliminateCandidate(SudokuWorkspace workspace, int Row, int Column, int Numbe
 	// check singke candidate in group
 	if (bmRowCands ^ bmRowTwice) {
 		bmRowCands ^= bmRowTwice; // contains now the single candidates in this group
-		for (iToken = 1, iRowIdx = Row * S_TEN + 1; iToken <= S_NINE; iToken++, iRowIdx++) {
+		for (iToken = 1, iRowIdx = S_TEN * Row + 1; iToken <= S_NINE; iToken++, iRowIdx++) {
 			if (!IS_Entered(workspace[iRowIdx]) && (workspace[iRowIdx] & bmRowCands)) {
 				if (REVERSE_BITMASKS[workspace[iRowIdx] & bmRowCands] > 0) {
 					iStatus = MakeEntry(workspace, Row, iToken, REVERSE_BITMASKS[workspace[iRowIdx] & bmRowCands]);
@@ -192,7 +225,7 @@ int EliminateCandidate(SudokuWorkspace workspace, int Row, int Column, int Numbe
 	if (bmSquCands ^ bmSquTwice) {
 		bmSquCands ^= bmSquTwice; // contains now the single candidates in this group
 		int nSquareIndex = 0;
-		for (iToken = 1, iSquIdx = (SQUARE_IDX[Row * S_TEN + Column] - 1) * S_NINE; iToken <= S_NINE; iToken++, iSquIdx++) {
+        for (iToken = 1, iSquIdx = (SQUARE_IDX[S_TEN * Row + Column] - 1) * S_NINE; iToken <= S_NINE; iToken++, iSquIdx++) {
 			nSquareIndex = SQUARE_COORDS_ROW[iSquIdx] * S_TEN + SQUARE_COORDS_COL[iSquIdx];
 			if (!IS_Entered(workspace[nSquareIndex]) && (workspace[nSquareIndex] & bmSquCands)) {
 				if (REVERSE_BITMASKS[workspace[nSquareIndex] & bmSquCands] > 0) {
@@ -208,12 +241,13 @@ int EliminateCandidate(SudokuWorkspace workspace, int Row, int Column, int Numbe
 	return iStatus;
 }
 
-int BacktrackInCell(SudokuWorkspace workspace, int Row, int Column) {
+int BacktrackInCell(SudokuWorkspace* wsStack, int CellWs, size_t &nRecDepth) {
 	int iStatus = S_OK;
 	int nCellCands;
-	int wsTemp[S_100];
-	int iNumberThatSolves = 0;
-	int wsSolved[S_100];
+    //SudokuWorkspace workspace = wsStack[nRecDepth - 1];
+	//SudokuWorkspace wsTemp = wsStack[nRecDepth];
+	int nNumberThatSolves = 0;
+	//SudokuWorkspace wsSolved = wsStack[S_SOLVED];
 
 #ifdef TIMING
 	LARGE_INTEGER TS, TE, Freq;
@@ -222,51 +256,51 @@ int BacktrackInCell(SudokuWorkspace workspace, int Row, int Column) {
 	QueryPerformanceCounter( &TS );
 #endif
 	
-	nCellCands = workspace[S_TEN * Row + Column];
+	nCellCands = wsStack[nRecDepth - 1][CellWs];
 	if (IS_Entered(nCellCands)) { return S_OK; }
 
-	for (int num = 1; num <= S_NINE; num++) {
+	for (int iNumber = 1; iNumber <= S_NINE; iNumber++) {
 		if (nCellCands == 0) {
 			break;
 		}
-		if ((nCellCands & BITMASKS[num]) != BITMASKS[num]) { 
+		if ((nCellCands & BITMASKS[iNumber]) != BITMASKS[iNumber]) { 
 			continue; 
 		}
-		memcpy(wsTemp, workspace, S_BLOCK_SIZE);
- 		iStatus = MakeEntry(wsTemp, Row, Column, num);
+        memcpy(wsStack[nRecDepth], wsStack[nRecDepth - 1], S_BLOCK_SIZE_100);
+        iStatus = MakeEntry(wsStack[nRecDepth], ROW_IDX[CellWs], COL_IDX[CellWs], iNumber);
 
 		if (iStatus == S_OK) {
-			iStatus = SolveByBacktracking(wsTemp);
+			iStatus = SolveByBacktracking(wsStack, nRecDepth);
 		}
 		if (iStatus == S_CONTRADICTION) {
-			nCellCands &= ~BITMASKS[num];
-			workspace[S_TEN * Row + Column]	&= ~BITMASKS[num];
+			nCellCands &= ~BITMASKS[iNumber];
+			wsStack[nRecDepth - 1][CellWs]	&= ~BITMASKS[iNumber];
 		} else if (iStatus == S_DONE) {
-			if (iNumberThatSolves > 0) { 
-				memcpy(workspace, wsSolved, S_BLOCK_SIZE);
-				workspace[0] = S_MULTI;
+			if (nNumberThatSolves > 0) { 
+                memcpy(wsStack[nRecDepth - 1], wsStack[S_SOLVED], S_BLOCK_SIZE_100);
+				wsStack[nRecDepth - 1][0] = S_MULTI;
 				iStatus = S_MULTIPLE;
 				nCellCands = 0;
 				return iStatus;
 			} else {
-				nCellCands &= ~BITMASKS[num];
-				iNumberThatSolves = num;
-				if (workspace[0] == S_MULTI) {
-					memcpy(workspace, wsTemp, S_BLOCK_SIZE);
+				nCellCands &= ~BITMASKS[iNumber];
+				nNumberThatSolves = iNumber;
+				if (wsStack[nRecDepth - 1][0] == S_MULTI) {
+                    memcpy(wsStack[nRecDepth - 1], wsStack[nRecDepth], S_BLOCK_SIZE_100);
 					return S_MULTIPLE;
 				} else {
-					memcpy(wsSolved, wsTemp, S_BLOCK_SIZE);
+                    memcpy(wsStack[S_SOLVED], wsStack[nRecDepth], S_BLOCK_SIZE_100);
 				}
 			}
 		} else {
 			if (iStatus == S_MULTIPLE) {
-				memcpy(workspace, wsTemp, S_BLOCK_SIZE);
+                memcpy(wsStack[nRecDepth - 1], wsStack[nRecDepth], S_BLOCK_SIZE_100);
 			}
 			return iStatus;
 		}
 	}
-	if (iNumberThatSolves > 0) {
-		memcpy(workspace, wsSolved, S_BLOCK_SIZE);
+	if (nNumberThatSolves > 0) {
+        memcpy(wsStack[nRecDepth - 1], wsStack[S_SOLVED], S_BLOCK_SIZE_100);
 		return S_DONE;
 	}
 #ifdef TIMING
@@ -277,61 +311,60 @@ int BacktrackInCell(SudokuWorkspace workspace, int Row, int Column) {
 	return iStatus;
 }
 
-int FixAndGetNextIndex(SudokuWorkspace workspace, int &Row, int &Column) {
-	int iCell;
-	int iRowOffset, iCol;
+int FixAndGetNextIndex(SudokuWorkspace workspace, int &nextCellWs) {
+	int iCell, iWsIdx;
 	int iMinCount, iMinCell;
 	int iMaxNumber, iThisNumber;
 	int *iCountNumber;
 	int iStatus;
 	bool bEntryMade = true;
 
+    iCountNumber = (int*)malloc(S_BLOCK_SIZE_TEN);
 	while (bEntryMade) {
 		bEntryMade = false;
-
 		iMinCount = S_NINE;
-		iMinCell = -1;
-
+		iMinCell = S_UNDEFINED;
 		iMaxNumber = 0;
-		iCountNumber = (int*)calloc(S_TEN, sizeof(int));
+        memset(iCountNumber, 0, S_TEN);
 
 		iCell = 0;
-		iRowOffset = S_TEN; iCol = 1;
 		while (iCell < S_81) {
-			if (!IS_Entered(workspace[iRowOffset + iCol])) {
-				if (BITCOUNT[workspace[iRowOffset + iCol]] <= 1) {
-					if (BITCOUNT[workspace[iRowOffset + iCol]] == 0) {
+            iWsIdx = WS_IDX[iCell];
+			if (!IS_Entered(workspace[iWsIdx])) {
+				if (BITCOUNT[workspace[iWsIdx]] <= 1) {
+					if (BITCOUNT[workspace[iWsIdx]] == 0) {
 						return S_CONTRADICTION;
 					}
-					iStatus = MakeEntry(workspace, iRowOffset / S_TEN, iCol, REVERSE_BITMASKS[workspace[iRowOffset + iCol]]);
+    				iThisNumber = REVERSE_BITMASKS[workspace[iWsIdx]];
+					iStatus = MakeEntry(workspace, ROW_IDX[iWsIdx], COL_IDX[iWsIdx], iThisNumber);
 					if (iStatus != S_OK) { return iStatus; }
+	    			iCountNumber[iThisNumber] += 1;
+		    		if (iCountNumber[iThisNumber] > iCountNumber[iMaxNumber]) {
+			    		iMaxNumber = iThisNumber;
+				    }
 					bEntryMade = true;
-				} else if (BITCOUNT[workspace[iRowOffset + iCol]] < iMinCount) {
-					iMinCount = BITCOUNT[workspace[iRowOffset + iCol]];
+				} else if (BITCOUNT[workspace[iWsIdx]] < iMinCount) {
+					iMinCount = BITCOUNT[workspace[iWsIdx]];
 					iMinCell = iCell;
-				} else if ((BITCOUNT[workspace[iRowOffset + iCol]] == iMinCount) && 
-						   (workspace[iRowOffset + iCol] & BITMASKS[iMaxNumber])) {
+				} else if ((BITCOUNT[workspace[iWsIdx]] == iMinCount) && 
+						   (workspace[iWsIdx] & BITMASKS[iMaxNumber])) {
 					iMinCell = iCell;
 				}
 			} else {
-				iThisNumber = -workspace[iRowOffset + iCol];
+				iThisNumber = -workspace[iWsIdx];
 				iCountNumber[iThisNumber] += 1;
 				if (iCountNumber[iThisNumber] > iCountNumber[iMaxNumber]) {
 					iMaxNumber = iThisNumber;
 				}
 			}
 			iCell += 1;
-			iCol += 1;
-			if (iCol > S_NINE) {
-				iRowOffset += S_TEN;
-				iCol = 1;
-			}
 		}
 	}
+    free(iCountNumber);
 	if (iMinCell >= 0) {
-		Row = (iMinCell / 9) + 1;
-		Column = (iMinCell % 9) + 1;
-	}
-	free(iCountNumber);
+        nextCellWs = WS_IDX[iMinCell];
+	} else {
+        return S_ERROR;
+    }
 	return S_OK;
 }

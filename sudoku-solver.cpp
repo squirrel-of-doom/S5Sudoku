@@ -2,48 +2,49 @@
 #include "sudoku-solver.h"
 #include "sudoku-logic.h"
 
-//#include <Windows.h>
-//#define TIMING 1
-
-void SolveSudoku(SudokuPuzzle sudoku, FILE* outFile) {
+#ifdef OUTFILE
+void SolveSudoku(SudokuWorkspace* wsStack, SudokuPuzzle sudoku, FILE* outFile) {
+#else
+void SolveSudoku(SudokuWorkspace* wsStack, SudokuPuzzle sudoku, char* &outIter) {
+#endif
 	int iStatus;
-	int workspace[S_100];
+    size_t nRecDepth;
+	int* workspace = wsStack[0];
 
 	InitWorkspace(workspace);
 	iStatus = TransferSudokuToWorkspace(sudoku, workspace);
 
+    /*
 	if ((iStatus == S_CONTRADICTION) || (iStatus == S_DONE) || (iStatus == S_EMPTY)) {
-		WriteOutSolutionFromWorkspace(outFile, workspace, iStatus);
+		WriteOutSolutionFromWorkspace(outIter, workspace, iStatus);
 		return;
 	}
+    */
 
-#ifdef TIMING
-	LARGE_INTEGER TS, TE, Freq;
-	QueryPerformanceFrequency( &Freq );
-	double dInvFreq = 1000.0 / static_cast<double>( Freq.QuadPart );
-	QueryPerformanceCounter( &TS );
-#endif
 	while (iStatus == S_OK) {
-		iStatus = SolveByBacktracking(workspace);
+        nRecDepth = 0;
+		iStatus = SolveByBacktracking(wsStack, nRecDepth);
 	}
-#ifdef TIMING
-	QueryPerformanceCounter( &TE );
-	printf("BACKTRACK elapsed: %f ms\n", ((static_cast<double>( TE.QuadPart - TS.QuadPart )) * dInvFreq));
-#endif
 
+#ifdef OUTFILE
 	WriteOutSolutionFromWorkspace(outFile, workspace, iStatus);
+#else
+	WriteOutSolutionFromWorkspace(outIter, workspace, iStatus);
+#endif
 	return;
 }
 
 /* Backtracking */
-int SolveByBacktracking(SudokuWorkspace workspace) {
+int SolveByBacktracking(SudokuWorkspace* wsStack, size_t &nRecDepth) {
 	int iStatus = S_OK;
-	int iRow, iColumn;
-
+	int iNextCell;
+    
 	while (iStatus == S_OK) {
-		iStatus = FixAndGetNextIndex(workspace, iRow, iColumn);
+		iStatus = FixAndGetNextIndex(wsStack[nRecDepth], iNextCell);
 		if (iStatus != S_OK) { break; }
-		iStatus = BacktrackInCell(workspace, iRow, iColumn);
+        nRecDepth++;
+		iStatus = BacktrackInCell(wsStack, iNextCell, nRecDepth);
+        nRecDepth--;
 	}
 
 	return iStatus;
@@ -77,34 +78,90 @@ int TransferSudokuToWorkspace(SudokuPuzzle sudoku, SudokuWorkspace workspace) {
 	return iStatus;
 }
 
+#ifdef OUTFILE
 const char* sImpossible = "0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n0,0,0,0,0,0,0,0,0\n\n";
 const char* sSolvesEmpty = "-1,-2,-3,-4,-5,-6,-7,-8,-9\n-4,-5,-6,-7,-8,-9,-1,-2,-3\n-7,-8,-9,-1,-2,-3,-4,-5,-6\n-2,-3,-1,-5,-6,-4,-8,-9,-7\n-5,-6,-4,-8,-9,-7,-2,-3,-1\n-8,-9,-7,-2,-3,-1,-5,-6,-4\n-3,-1,-2,-6,-4,-5,-9,-7,-8\n-6,-4,-5,-9,-7,-8,-3,-1,-2\n-9,-7,-8,-3,-1,-2,-6,-4,-5\n\n";
+#else
+const char* sImpossible = "0,0,0,0,0,0,0,0,0\r\n0,0,0,0,0,0,0,0,0\r\n0,0,0,0,0,0,0,0,0\r\n0,0,0,0,0,0,0,0,0\r\n0,0,0,0,0,0,0,0,0\r\n0,0,0,0,0,0,0,0,0\r\n0,0,0,0,0,0,0,0,0\r\n0,0,0,0,0,0,0,0,0\r\n0,0,0,0,0,0,0,0,0\r\n\r\n";
+const char* sSolvesEmpty = "-1,-2,-3,-4,-5,-6,-7,-8,-9\r\n-4,-5,-6,-7,-8,-9,-1,-2,-3\r\n-7,-8,-9,-1,-2,-3,-4,-5,-6\r\n-2,-3,-1,-5,-6,-4,-8,-9,-7\r\n-5,-6,-4,-8,-9,-7,-2,-3,-1\r\n-8,-9,-7,-2,-3,-1,-5,-6,-4\r\n-3,-1,-2,-6,-4,-5,-9,-7,-8\r\n-6,-4,-5,-9,-7,-8,-3,-1,-2\r\n-9,-7,-8,-3,-1,-2,-6,-4,-5\r\n\r\n";
+#endif
+const int SUDOKU_SIZE_IN = sizeof(char) * (/* Sudoku numbers: */ 81 + 
+                                        /* Separators: */ 81 + 
+                                        /* add. linebreaks: */ 9);
+const int SUDOKU_SIZE_OUT = sizeof(char) * (/* Sudoku numbers: */ 81 + 
+                                        /* Separators: */ 81 + 
+                                        /* add. linebreaks: */ 0);
+#ifdef OUTFILE
+char sSudokuOut[SUDOKU_SIZE_OUT + S_81 + 2];
+#endif
 
+
+#ifdef OUTFILE
 void WriteOutSolutionFromWorkspace(FILE* outFile, SudokuWorkspace workspace, int nStatus) {
 	bool bMulti = (nStatus == S_MULTIPLE);
 	int nRowIdx = 0;
 
 	if (nStatus == S_CONTRADICTION) {
-		fputs(sImpossible, outFile);
+        //memcpy(sSudokuOut, sImpossible, SUDOKU_SIZE_OUT + 2); // +2 for blank line
+        fwrite(sImpossible, 1, SUDOKU_SIZE_OUT + 1, outFile);
 		return;
 	}
 
 	if (nStatus == S_EMPTY) {
-		fputs(sSolvesEmpty, outFile);
+        //memcpy(sSudokuOut, sSolvesEmpty, SUDOKU_SIZE_OUT + S_81 + 2); // minus signs, blank line
+        fwrite(sSolvesEmpty, 1, SUDOKU_SIZE_OUT + S_81 + 1, outFile);
+		return;
+	}
+	
+    memset(sSudokuOut, 0, SUDOKU_SIZE_OUT);
+    char* outIter = sSudokuOut;
+	for (int row = 1; row <= S_NINE; row++) {
+		nRowIdx += S_TEN;
+		for (int col = 1; col <= S_NINE; col++) {
+            if (col > 1) { *outIter = S_CHAR_DEL; outIter++; }
+			if (bMulti) { *outIter = S_CHAR_MINUS; outIter++;  }
+            *outIter = S_CHAR_NULL - workspace[nRowIdx + col]; 
+            outIter++; 
+		}
+        //*outIter = S_CHAR_LINEBREAK_13; outIter++;
+        *outIter = S_CHAR_LINEBREAK_10; outIter++;
+	}
+    //*outIter = S_CHAR_LINEBREAK_13; outIter++;
+    *outIter = S_CHAR_LINEBREAK_10; outIter++;
+    fwrite(sSudokuOut, 1, SUDOKU_SIZE_OUT + (bMulti ? S_81 + 1 : 1), outFile);
+}
+#else
+void WriteOutSolutionFromWorkspace(char* &outIter, SudokuWorkspace workspace, int nStatus) {
+	bool bMulti = (nStatus == S_MULTIPLE);
+	int nRowIdx = 0;
+
+	if (nStatus == S_CONTRADICTION) {
+        memcpy(outIter, sImpossible, SUDOKU_SIZE_OUT + 2); // +2 for blank line
+        outIter += SUDOKU_SIZE_OUT + 2;
+		return;
+	}
+
+	if (nStatus == S_EMPTY) {
+        memcpy(outIter, sSolvesEmpty, SUDOKU_SIZE_OUT + S_81 + 2); // minus signs, blank line
+        outIter += SUDOKU_SIZE_OUT + S_81 + 2;
 		return;
 	}
 	
 	for (int row = 1; row <= S_NINE; row++) {
 		nRowIdx += S_TEN;
 		for (int col = 1; col <= S_NINE; col++) {
-			if (col > 1) { fputc(S_CHAR_DEL, outFile); }
-			if (bMulti) { fputc(S_CHAR_MINUS, outFile); }
-			fputc(S_CHAR_NULL - workspace[nRowIdx + col], outFile);
+            if (col > 1) { *outIter = S_CHAR_DEL; outIter++; }
+			if (bMulti) { *outIter = S_CHAR_MINUS; outIter++;  }
+            *outIter = S_CHAR_NULL - workspace[nRowIdx + col]; 
+            outIter++; 
 		}
-		fputc(S_CHAR_LINEBREAK, outFile);
+        *outIter = S_CHAR_LINEBREAK_13; outIter++;
+        *outIter = S_CHAR_LINEBREAK_10; outIter++;
 	}
-	fputc(S_CHAR_LINEBREAK, outFile);
+    *outIter = S_CHAR_LINEBREAK_13; outIter++;
+    *outIter = S_CHAR_LINEBREAK_10; outIter++;
 }
+#endif
 
 SudokuPuzzle ReadAllSudokus(FILE* inFile, long &lSize) {
     if ( (inFile == NULL) || feof(inFile) ) return NULL;
@@ -126,9 +183,6 @@ SudokuPuzzle ReadAllSudokus(FILE* inFile, long &lSize) {
     return sBuffer;
 }
 
-const int SUDOKU_SIZE = sizeof(char) * (/* Sudoku numbers: */ 81 + 
-                                        /* Separators: */ 81 + 
-                                        /* add. linebreaks: */ 9);
 SudokuPuzzle GetNextSudoku(SudokuPuzzle list, SudokuPuzzle current) {
     if (list == NULL) {
         return NULL;
@@ -136,7 +190,7 @@ SudokuPuzzle GetNextSudoku(SudokuPuzzle list, SudokuPuzzle current) {
     if (current == NULL) {
         return list;
     }
-    SudokuPuzzle newCurrent = current + SUDOKU_SIZE;
+    SudokuPuzzle newCurrent = current + SUDOKU_SIZE_IN;
     if (*newCurrent == '\0') {
         return NULL;
     }

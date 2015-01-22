@@ -33,6 +33,18 @@ void InitWorkspaceTemplate() {
 	wsTemplate[0] = 1;
 }
 
+void InitWorkspaceStack(SudokuWorkspace* wsStack) {
+    for (int ii = 0; ii < S_81; ii++) {
+        wsStack[ii] = (SudokuWorkspace)malloc(S_BLOCK_SIZE);
+    }
+}
+
+void FreeWorkspaceStack(SudokuWorkspace* wsStack) {
+    for (int ii = 0; ii < S_81; ii++) {
+        free(wsStack[ii]);
+    }
+}
+
 /**
  * Sudoku simple structure
  *

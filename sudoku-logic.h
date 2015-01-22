@@ -6,10 +6,8 @@
 int MakeEntry(SudokuWorkspace workspace, int Row, int Column, int Number);
 int EliminateCandidate(SudokuWorkspace workspace, int Row, int Column, int Number);
 
-int BacktrackInCell(SudokuWorkspace workspace, int Row, int Column);
-int FixAndGetNextIndex(SudokuWorkspace workspace, int &Row, int &Column);
-
-/* Square coordinate arithmetic */
-int inline getSquareIndex(int Row, int Column) { return 3 * ((Row - 1) / 3) + ((Column - 1) / 3) + 1; }
+int BacktrackInCell(SudokuWorkspace* wsStack, int CellWs, size_t &nRecDepth);
+int FixAllSingleCandidates(SudokuWorkspace workspace);
+int FixAndGetNextIndex(SudokuWorkspace workspace, int &nextCellWs);
 
 bool inline IS_Entered(int value) { return (value < 0); }

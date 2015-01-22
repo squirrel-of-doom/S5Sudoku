@@ -29,5 +29,8 @@ typedef int** SquareCoords;
 
 typedef int* SudokuWorkspace;
 
+void InitWorkspaceStack(SudokuWorkspace* wsStack);
 void InitWorkspace(SudokuWorkspace workspace);
 void InitWorkspaceTemplate();
+
+void FreeWorkspaceStack(SudokuWorkspace* wsStack);
